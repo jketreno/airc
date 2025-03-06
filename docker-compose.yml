@@ -13,6 +13,10 @@ services:
     volumes:
       - ./cache:/root/.cache
       - ./src:/opt/airc/src:rw
+    cap_add: # used for running ze-monitor within airc container
+      - CAP_DAC_READ_SEARCH # Bypass all filesystem read access checks
+      - CAP_PERFMON         # Access to perf_events (vs. overloaded CAP_SYS_ADMIN)
+      - CAP_SYS_PTRACE      # PTRACE_MODE_READ_REALCREDS ptrace access mode check
 
   jupyter:
     build:
