@@ -1,0 +1,56 @@
+diff --git a/__init__.py b/__init__.py
+index 2ead20d..892471b 100644
+--- a/__init__.py
++++ b/__init__.py
+@@ -1,11 +1,21 @@
+ # noinspection PyUnresolvedReferences
+-from asyncio import coroutine, Future
++from asyncio import Future
+ from functools import cmp_to_key
+ from . import connection, protocol, client, features
+ from .client import Error, NotInChannel, AlreadyInChannel, BasicClient, ClientPool
+ from .features.ircv3.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, \
+     NEGOTIATED as CAPABILITY_NEGOTIATED
+ 
++import asyncio
++# And use asyncio.coroutine where it was used, although it's better to switch to async def
++# However, since 'coroutine' decorator is removed, you would actually need to:
++from functools import wraps
++
++def coroutine(func):
++    @wraps(func)
++    async def wrapper(*args, **kwargs):
++        return func(*args, **kwargs)
++    return wrapper
+ 
+ __name__ = 'pydle'
+ __version__ = '0.9.4rc1'
+diff --git a/connection.py b/connection.py
+index c9a9e8e..5445b0e 100644
+--- a/connection.py
++++ b/connection.py
+@@ -37,6 +37,7 @@ class Connection:
+         self.reader = None
+         self.writer = None
+         self.eventloop = eventloop or asyncio.new_event_loop()
++        self.lock = asyncio.Lock()
+ 
+     async def connect(self):
+         """ Connect to target. """
+@@ -49,8 +50,7 @@ class Connection:
+             host=self.hostname,
+             port=self.port,
+             local_addr=self.source_address,
+-            ssl=self.tls_context,
+-            loop=self.eventloop
++            ssl=self.tls_context
+         )
+ 
+     def create_tls_context(self):
+@@ -112,4 +112,5 @@ class Connection:
+         await self.writer.drain()
+ 
+     async def recv(self, *, timeout=None):
+-        return await asyncio.wait_for(self.reader.readline(), timeout=timeout)
++        async with self.lock:
++            return await asyncio.wait_for(self.reader.readline(), timeout=timeout)

@@ -1,0 +1,31 @@
+services:
+  airc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: airc
+    image: airc
+    restart: "no"
+    env_file:
+      - .env
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - ./cache:/root/.cache
+      - ./src:/opt/airc/src:rw
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: jupyter
+    image: jupyter
+    env_file:
+      - .env
+    devices:
+      - /dev/dri:/dev/dri
+    ports:
+    - 8888:8888 # Jupyter Notebook
+    volumes:
+      - ./jupyter:/opt/jupyter:rw
+      - ./cache:/root/.cache
