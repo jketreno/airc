@@ -84,3 +84,22 @@ The default port for inbound connections is 8888 (see docker-compose.yml).
 $(pwd)/jupyter is bind mounted to /opt/juypter in the container, which is where notebooks will be saved by default.
 
 To access the jupyter notebook, go to `https://localhost:8888/jupyter`.
+
+### Monitoring
+
+You can run `ze-monitor` within the launched containers to monitor
+GPU usage.
+
+```bash
+containers=($(docker ps --filter "ancestor=airc" --format "{{.ID}}"))
+if [[ ${#containers[*]} -eq 0 ]]; then
+  echo "Running airc container not found."
+else
+  for container in ${containers[@]}; do
+    echo "Container ${container} devices:"
+    docker exec -it ${container} ze-monitor
+  done
+fi
+```
+
+If an airc container is running
