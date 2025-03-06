@@ -102,4 +102,17 @@ else
 fi
 ```
 
-If an airc container is running
+If an airc container is running, you should see something like:
+
+```
+Container 5317c503e771 devices:
+Device 1: 8086:A780 (Intel(R) UHD Graphics 770)
+Device 2: 8086:E20B (Intel(R) Graphics [0xe20b])
+```
+
+You can then launch ze-monitor in that container specifying 
+the device you wish to monitor:
+
+```
+docker exec -it 5317c503e771 ze-monitor --device 2
+```
