@@ -4,8 +4,9 @@ AI is Really Cool
 
 NOTE: If running on an Intel Arc A series graphics processor, fp64 is not supported and may need to either be emulated or have the model quantized.
 
-This project provides container definitions that will provide PyTorch 2.6 with
-Intel's LLM project. In addition, it provides a small local chat server and an IRC client to provide a chat bot.
+This project provides a simple IRC chat client. It runs the neuralchat model, enhanced with a little bit of RAG to fetch news RSS feeds.
+
+Internally, it is built using PyTorch 2.6 and the Intel IPEX/LLM.
 
 # Installation
 

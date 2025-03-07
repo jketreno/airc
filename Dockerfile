@@ -158,64 +158,14 @@ RUN { \
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-FROM pytorch AS ipex-2.6.10
-
-WORKDIR /opt
-RUN git clone --branch release/xpu/2.6.10 --depth 1 https://github.com/intel/intel-extension-for-pytorch.git ipex-2.6.10
-WORKDIR /opt/ipex-2.6.10
-
-RUN wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
-    | gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
-    | tee /etc/apt/sources.list.d/oneAPI.list \
-    && apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    intel-deep-learning-essentials-2025.0 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log}
-
-# Requirements for building ipex / oneAPI...
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libspdlog-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log}
-
-RUN python3 -m venv --system-site-packages /opt/ipex-2.6.10/venv
-
-RUN { \
-    echo '#!/bin/bash' ; \
-    update-alternatives --set python3 /opt/python/bin/python3.11 ; \
-    echo 'source /opt/intel/oneapi/setvars.sh' ; \
-    echo 'source /opt/ipex-2.6.10/venv/bin/activate' ; \
-    echo 'bash -c "${@}"' ; \
-    } > /opt/ipex-2.6.10/shell ; \
-    chmod +x /opt/ipex-2.6.10/shell
-
-SHELL [ "/opt/ipex-2.6.10/shell" ]
-
-#RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu
-RUN pip3 install -r requirements.txt
-
-RUN git submodule update --init --recursive --depth 1
-
-# Building ipex-2.6.10 wheel requires level-zero loader (libze-dev)
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libze-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log}
-
-# torch needs to be installed
-RUN pip3 install torch --index-url https://download.pytorch.org/whl/test/xpu
-
-RUN python setup.py bdist_wheel
-
 FROM pytorch AS ipex-llm-src
 
 # Build ipex-llm from source
 
-RUN git clone --depth 1 https://github.com/intel/ipex-llm.git /opt/ipex-llm
+RUN git clone --branch main --depth 1 https://github.com/intel/ipex-llm.git /opt/ipex-llm \
+    && cd /opt/ipex-llm \
+    && git fetch --depth 1 origin cb3c4b26ad058c156591816aa37eec4acfcbf765 \
+    && git checkout cb3c4b26ad058c156591816aa37eec4acfcbf765
 
 WORKDIR /opt/ipex-llm
 
@@ -231,8 +181,8 @@ RUN { \
 SHELL [ "/opt/ipex-llm/shell" ]
 
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu
-COPY --from=ipex-2.6.10 /opt/ipex-2.6.10/dist/intel_extension_for_pytorch-2.6.10*.whl /opt/wheels/
-RUN for pkg in /opt/wheels/intel_extension_for_pytorch-2.6.10*.whl; do pip install $pkg[xpu-2-6]; done
+#COPY --from=ipex-2.6.10 /opt/ipex-2.6.10/dist/intel_extension_for_pytorch-2.6.10*.whl /opt/wheels/
+#RUN for pkg in /opt/wheels/intel_extension_for_pytorch-2.6.10*.whl; do pip install $pkg[xpu-2-6]; done
 
 WORKDIR /opt/ipex-llm/python/llm
 RUN pip install requests wheel
@@ -318,9 +268,6 @@ RUN { \
 SHELL [ "/opt/airc/shell" ]
 
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu
-# Install ipex built in ipex-2.6.10
-COPY --from=ipex-2.6.10 /opt/ipex-2.6.10/dist/*.whl /opt/wheels/
-RUN for pkg in /opt/wheels/intel_extension_for_pytorch-2.6.10*.whl; do pip install $pkg[xpu-2-6]; done
 # Install ipex-llm built in ipex-llm-src
 COPY --from=ipex-llm-src /opt/ipex-llm/python/llm/dist/*.whl /opt/wheels/
 RUN for pkg in /opt/wheels/ipex_llm*.whl; do pip install $pkg; done
@@ -334,7 +281,8 @@ RUN pip3 install pydle transformers sentencepiece accelerate \
     -p1 < /opt/airc/src/pydle.patch
 
 # mistral fails with cache_position errors with transformers>4.40 (or at least it fails with the latest)
-RUN pip install transformers==4.40
+# as well as MistralSpda* things missing
+RUN pip install "sentence_transformers<3.4.1" "transformers==4.40.0"
 
 RUN pip3 install pydle transformers sentencepiece accelerate
 

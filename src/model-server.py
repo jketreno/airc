@@ -97,14 +97,14 @@ embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 # Collect news from all sources
 documents = []
 for feed in rss_feeds:
-    documents.extend(feed.update())
+    documents.extend(feed.articles)
 
 # Step 2: Encode and store news articles into FAISS
 doc_vectors = np.array(embedding_model.encode(documents), dtype=np.float32)
 index = faiss.IndexFlatL2(doc_vectors.shape[1])  # Initialize FAISS index
 index.add(doc_vectors)  # Store news vectors
 
-print(f"Stored {len(doc_vectors)} documents in FAISS index.")
+logging.info(f"Stored {len(doc_vectors)} documents in FAISS index.")
 
 # Step 3: Retrieval function for user queries
 def retrieve_documents(query, top_k=2):
@@ -217,13 +217,13 @@ def chat_completions():
             doc_vectors = np.array(embedding_model.encode(documents), dtype=np.float32)
             index = faiss.IndexFlatL2(doc_vectors.shape[1])  # Initialize FAISS index
             index.add(doc_vectors)  # Store news vectors
-            print(f"Stored {len(doc_vectors)} documents in FAISS index.")
+            logging.info(f"Stored {len(doc_vectors)} documents in FAISS index.")
             response_content = "News refresh requested."
         else:
             logging.info(f"Query: {query}")
             retrieved_docs = retrieve_documents(query)
             rag_prompt = format_prompt(query, retrieved_docs)
-            logging.info(f"RAG prompt: {rag_prompt}")
+            logging.debug(f"RAG prompt: {rag_prompt}")
 
             # Get AI-generated response
             response_content, _ = chat.generate_response(rag_prompt)
