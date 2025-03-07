@@ -281,7 +281,7 @@ RUN { \
     echo '    --ServerApp.allow_origin=* \' ; \
     echo '    --ServerApp.base_url="/jupyter" \' ; \
     echo '    "${@}" \' ; \
-    echo '    >> "/root/.cache/jupyter.log" 2>&1' ; \
+    echo '    2>&1 | tee -a "/root/.cache/jupyter.log"' ; \
     echo '  echo "jupyter notebook died ($?). Restarting."' ; \
     echo '  sleep 5' ; \
     echo 'done' ; \
@@ -392,5 +392,12 @@ COPY --from=ze-monitor /opt/ze-monitor/build/ze-monitor-*deb /opt/
 RUN dpkg -i /opt/ze-monitor-*deb
 
 WORKDIR /opt/airc
+
+SHELL [ "/opt/airc/shell" ]
+
+# Needed by src/model-server.py
+RUN pip install faiss-cpu sentence_transformers feedparser
+
+SHELL [ "/bin/bash", "-c" ]
 
 ENTRYPOINT [ "/entrypoint-airc.sh" ]

@@ -162,7 +162,6 @@ class AIRC(pydle.Client):
                 # Extract and print just the assistant's message if available
                 if "choices" in response and len(response["choices"]) > 0:
                     content = response["choices"][0]["message"]["content"]
-                    print(f"\nAssistant: {content}")
 
             if content:
                 logging.info(f'Sending: {content}')
