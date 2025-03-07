@@ -340,7 +340,7 @@ WORKDIR /opt/airc
 SHELL [ "/opt/airc/shell" ]
 
 # Needed by src/model-server.py
-RUN pip install faiss-cpu sentence_transformers feedparser
+RUN pip install faiss-cpu sentence_transformers feedparser bs4
 
 SHELL [ "/bin/bash", "-c" ]
 

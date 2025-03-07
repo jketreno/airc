@@ -20,6 +20,7 @@ import faiss
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
+from bs4 import BeautifulSoup
 
 def parse_args():
     parser = argparse.ArgumentParser(description="AI is Really Cool Server")
@@ -36,6 +37,16 @@ def setup_logging(level):
     
     logging.basicConfig(level=numeric_level, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.info(f"Logging is set to {level} level.")
+
+def extract_text_from_html_or_xml(content, is_xml=False):
+    # Parse the content
+    if is_xml:
+        soup = BeautifulSoup(content, 'xml')  # Use 'xml' parser for XML content
+    else:
+        soup = BeautifulSoup(content, 'html.parser')  # Default to 'html.parser' for HTML content
+
+    # Extract and return just the text
+    return soup.get_text()
 
 class Feed():
     def __init__(self, name, url, poll_limit_min = 30, max_articles=5):
@@ -67,6 +78,7 @@ class Feed():
                     content += f"Link: {link}\n"
                 summary = entry.get("summary")
                 if summary:
+                    summary = extract_text_from_html_or_xml(summary, False)
                     content += f"Summary: {summary}\n"
                 published = entry.get("published")
                 if published:
@@ -166,7 +178,7 @@ class Chat():
                 prompt, 
                 add_special_tokens=False,
                 return_tensors="pt", 
-                max_length=8000,            # Prevent 'Asking to truncate to max_length...'
+                max_length=7999,            # Prevent 'Asking to truncate to max_length...'
                 padding=True,               # Handles padding automatically
                 truncation=True
             )

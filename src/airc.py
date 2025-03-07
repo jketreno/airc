@@ -118,10 +118,17 @@ class AIRC(pydle.Client):
             logging.info("Burst limit reset due to inactivity.")
 
     async def message(self, target, message):
-        """Splits a multi-line message and sends each line separately."""
-        for line in message.splitlines():  # Splits on both '\n' and '\r\n'
+        """Splits a multi-line message and sends each line separately. If more than 10 lines, truncate and add a message."""
+        lines = message.splitlines()  # Splits on both '\n' and '\r\n'
+        
+        # Process the first 10 lines
+        for line in lines[:10]:
             if line.strip():  # Ignore empty lines
                 await self._message_queue.put((target, line))
+
+        # If there are more than 10 lines, add the truncation message
+        if len(lines) > 10:
+            await self._message_queue.put((target, "[additional content truncated]"))
 
     async def on_connect(self):
         logging.debug('on_connect')
