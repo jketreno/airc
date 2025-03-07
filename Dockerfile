@@ -136,7 +136,7 @@ RUN python3 -m venv --system-site-packages /opt/pytorch/venv
 
 SHELL [ "/opt/pytorch/shell" ]
 
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu
 RUN pip3 freeze > /opt/pytorch/requirements.txt
 
 SHELL [ "/bin/bash", "-c" ]
@@ -180,9 +180,7 @@ RUN { \
 
 SHELL [ "/opt/ipex-llm/shell" ]
 
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu
-#COPY --from=ipex-2.6.10 /opt/ipex-2.6.10/dist/intel_extension_for_pytorch-2.6.10*.whl /opt/wheels/
-#RUN for pkg in /opt/wheels/intel_extension_for_pytorch-2.6.10*.whl; do pip install $pkg[xpu-2-6]; done
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu
 
 WORKDIR /opt/ipex-llm/python/llm
 RUN pip install requests wheel
@@ -215,7 +213,7 @@ RUN { \
     echo '  fi' ; \
     echo 'fi' ; \
     echo 'update-alternatives --set python3 /opt/python/bin/python3.11' ; \
-    echo 'source /opt/intel/oneapi/setvars.sh' ; \
+    echo 'if [[ -e /opt/intel/oneapi/setvars.sh ]]; then source /opt/intel/oneapi/setvars.sh; fi' ; \
     echo 'source /opt/airc/venv/bin/activate' ; \
     echo 'if [[ "${1}" == "shell" ]]; then echo "Dropping to shell"; /bin/bash; exit $?; fi' ; \
     echo 'while true; do' ; \
@@ -259,7 +257,7 @@ RUN wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRO
 RUN { \
     echo '#!/bin/bash' ; \
     echo 'update-alternatives --set python3 /opt/python/bin/python3.11' ; \
-    echo 'source /opt/intel/oneapi/setvars.sh' ; \
+    echo 'if [[ -e /opt/intel/oneapi/setvars.sh ]]; then source /opt/intel/oneapi/setvars.sh; fi' ; \
     echo 'source /opt/airc/venv/bin/activate' ; \
     echo 'if [[ "$1" == "" ]]; then bash -c; else bash -c "${@}"; fi' ; \
     } > /opt/airc/shell ; \
@@ -267,7 +265,7 @@ RUN { \
 
 SHELL [ "/opt/airc/shell" ]
 
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu
 # Install ipex-llm built in ipex-llm-src
 COPY --from=ipex-llm-src /opt/ipex-llm/python/llm/dist/*.whl /opt/wheels/
 RUN for pkg in /opt/wheels/ipex_llm*.whl; do pip install $pkg; done
@@ -283,8 +281,6 @@ RUN pip3 install pydle transformers sentencepiece accelerate \
 # mistral fails with cache_position errors with transformers>4.40 (or at least it fails with the latest)
 # as well as MistralSpda* things missing
 RUN pip install "sentence_transformers<3.4.1" "transformers==4.40.0"
-
-RUN pip3 install pydle transformers sentencepiece accelerate
 
 # To get xe_linear and other Xe methods    
 RUN pip3 install 'bigdl-core-xe-all>=2.6.0b'
@@ -311,7 +307,7 @@ RUN { \
     echo 'fi' ; \
     echo 'echo "Container: airc"' ; \
     echo 'echo "Setting pip environment to /opt/airc"' ; \
-    echo 'source /opt/intel/oneapi/setvars.sh'; \
+    echo 'if [[ -e /opt/intel/oneapi/setvars.sh ]]; then source /opt/intel/oneapi/setvars.sh; fi' ; \
     echo 'source /opt/airc/venv/bin/activate'; \
     echo 'if [[ "${1}" == "shell" ]] || [[ "${1}" == "/bin/bash" ]]; then' ; \
     echo '  echo "Dropping to shell"' ; \
